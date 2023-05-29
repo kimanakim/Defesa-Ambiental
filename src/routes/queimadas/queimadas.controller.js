@@ -1,25 +1,14 @@
-let queimadaNextId = 2;
-let queimadas = [
-    {
-        id: 1,
-        usuario: 'jose@email.com',
-        latitude: '29.999',
-        longitude: '15.354'
-    },
-    {
-        id: 2,
-        usuario: 'rose@email.com',
-        latitude: '22.999',
-        longitude: '45.354'
-    }
-];
-
+import { serverPool } from '../../server_init.js';
+import sql from 'mssql';
 
 export async function getQueimadas(req, res) {
     console.log('getQueimadas');
     try {
-        return res.status(200).json(queimadas);
+        const request = new sql.Request(serverPool.pool);
+        const ocorrencias = await request.query('SELECT * FROM [dbo].ocorrencia where tipo = \'queimadas\'');
+        return res.status(200).json(ocorrencias.recordset);
     } catch(error) {
+        console.log(error);
         res.status(500).json({ error: error.message });
     }
 }
@@ -29,9 +18,12 @@ export async function getQueimadasById(req, res) {
     try {
         const queimadaId = Number(req.params.id); // String
         const queimada = queimadas.find(q => q.id === queimadaId);
-
-        if (queimada) {
-            return res.status(200).json(queimada);
+        const request = new sql.Request(serverPool.pool);
+        request.input('UsuarioId', sql.Int, queimadaId);
+        const ocorrencias = await request.query('SELECT * FROM [dbo].ocorrencia where tipo = \'queimadas\' AND usuario_id = @UsuarioId');
+        const result = ocorrencias.recordset;
+        if (result.length > 0) {
+            return res.status(200).json(result[0]);
         } else {
             return res.status(404).json({ message: 'Queimada não encontrada' });
         }
@@ -58,16 +50,18 @@ export async function postQueimada(req, res) {
             return res.status(400).json({ message: 'longitude incorreta' });
         }
 
-        const idToAssign = queimadaNextId + 1;
-        const queimada = {
-            id: idToAssign,
-            ...queimadaToSave
-        };
-        
-        queimadas.push(queimada);
-        queimadaNextId++;
+        const request = new sql.Request(serverPool.pool);
+        request.input('Usuario', sql.VarChar, queimadaToSave.usuario);
+        request.input('Tipo', sql.VarChar, 'queimadas');
+        request.input('Latitude', sql.Decimal(8, 6), queimadaToSave.latitude);
+        request.input('Longitude', sql.Decimal(9, 6), queimadaToSave.longitude);
+        const ocorrencias = await request.query('INSERT INTO ocorrencia(usuario, tipo, latitude, longitude) OUTPUT INSERTED.* VALUES (@Usuario, @Tipo, @Latitude, @Longitude)');
 
-        return res.status(200).json(queimada);
+        const createdQueimada = {
+            ...ocorrencias.recordset[0],
+        }
+
+        return res.status(200).json(createdQueimada);
 
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -92,19 +86,26 @@ export async function putQueimada(req, res) {
             return res.status(400).json({ message: 'longitude incorreta' });
         }
 
-        const queimadaIndex = queimadas.findIndex(q => q.id === queimadaId);
-        if (queimadaIndex < 0) {
+        const requestId = new sql.Request(serverPool.pool);
+        requestId.input('UsuarioId', sql.Int, queimadaId);
+        const queimadas = await requestId.query('SELECT * FROM [dbo].ocorrencia where tipo = \'queimadas\' AND usuario_id = @UsuarioId');
+        if (queimadas.recordset.length === 0) {
             return res.status(404).json({ message: 'Queimada não encontrada' });
         }
 
-        const queimada = {
-            id: queimadaId,
-            ...queimadaToSave
+        const request = new sql.Request(serverPool.pool);
+        request.input('Id', sql.Int, queimadaId);
+        request.input('Usuario', sql.VarChar, queimadaToSave.usuario);
+        request.input('Tipo', sql.VarChar, 'queimadas');
+        request.input('Latitude', sql.Decimal(8, 6), queimadaToSave.latitude);
+        request.input('Longitude', sql.Decimal(9, 6), queimadaToSave.longitude);
+        const ocorrencias = await request.query('UPDATE ocorrencia SET usuario = @Usuario, tipo = @Tipo, latitude = @Latitude, longitude = @Longitude OUTPUT INSERTED.* WHERE usuario_id = @Id'); 
+
+        const updatedQueimada = {
+            ...ocorrencias.recordset[0]
         };
 
-        queimadas[queimadaIndex] = queimada;
-
-        return res.status(200).json(queimada);
+        return res.status(200).json(updatedQueimada);
 
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -117,20 +118,34 @@ export async function patchQueimada(req, res) {
         const queimadaId = Number(req.params.id);
         const fieldsToSave = req.body;
 
-        const queimadaIndex = queimadas.findIndex(q => q.id === queimadaId);
-        if (queimadaIndex < 0) {
+        const requestId = new sql.Request(serverPool.pool);
+        requestId.input('UsuarioId', sql.Int, queimadaId);
+        const queimadas = await requestId.query('SELECT * FROM [dbo].ocorrencia where tipo = \'queimadas\' AND usuario_id = @UsuarioId');
+        if (queimadas.recordset.length === 0) {
             return res.status(404).json({ message: 'Queimada não encontrada' });
         }
 
-        const queimada = {
+        const queimadaToSave = {
             id: queimadaId,
-            ...queimadas[queimadaIndex],
+            ...queimadas.recordset[0],
             ...fieldsToSave
         };
 
-        queimadas[queimadaIndex] = queimada;
+        const request = new sql.Request(serverPool.pool);
+        request.input('Id', sql.Int, queimadaId);
+        request.input('Usuario', sql.VarChar, queimadaToSave.usuario);
+        request.input('Tipo', sql.VarChar, 'queimadas');
+        request.input('Latitude', sql.Decimal(8, 6), queimadaToSave.latitude);
+        request.input('Longitude', sql.Decimal(9, 6), queimadaToSave.longitude);
+        const ocorrencias = await request.query('UPDATE ocorrencia SET usuario = @Usuario, tipo = @Tipo, latitude = @Latitude, longitude = @Longitude OUTPUT INSERTED.* WHERE usuario_id = @Id'); 
 
-        return res.status(200).json(queimada);
+        const updatedQueimada = {
+            ...ocorrencias.recordset[0]
+        };
+
+        console.log('updatedQueimada', updatedQueimada);
+
+        return res.status(200).json(updatedQueimada);
 
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -141,14 +156,22 @@ export async function deleteQueimada(req, res) {
     console.log('deleteQueimada');
     try {
         const queimadaId = Number(req.params.id); 
-        const queimada = queimadas.find(q => q.id === queimadaId);
-
-        if (queimada) {
-            queimadas = queimadas.filter(q => q.id !== queimadaId);
-            return res.status(200).json(queimada);
-        } else {
+        const requestId = new sql.Request(serverPool.pool);
+        requestId.input('UsuarioId', sql.Int, queimadaId);
+        const queimadas = await requestId.query('SELECT * FROM [dbo].ocorrencia where tipo = \'queimadas\' AND usuario_id = @UsuarioId');
+        if (queimadas.recordset.length === 0) {
             return res.status(404).json({ message: 'Queimada não encontrada' });
         }
+
+        const request = new sql.Request(serverPool.pool);
+        request.input('Id', sql.Int, queimadaId);
+        const ocorrencias = await request.query('DELETE FROM [dbo].ocorrencia OUTPUT DELETED.* where usuario_id = @Id')
+
+        const deletedQueimada = {
+            ...ocorrencias.recordset[0]
+        };
+
+        return res.status(200).json(deletedQueimada);
 
     } catch(error) {
         res.status(500).json({ error: error.message });
