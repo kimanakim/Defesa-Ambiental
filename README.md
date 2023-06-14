@@ -1,7 +1,7 @@
 # A3-Defesa-Ambiental
 
 
-![Capa do Projeto](https://www.google.com/url?sa=i&url=https%3A%2F%2Fthegreenestpost.com%2Fcerrado-brasileiro-e-considerado-bioma-com-maior-potencial-para-agricultura-sustentavel-do-mundo%2F&psig=AOvVaw1J2Nv0DTChG-5lg3obauHe&ust=1686823481844000&source=images&cd=vfe&ved=0CBEQjRxqFwoTCIiG_qjBwv8CFQAAAAAdAAAAABBP)
+![Capa do Projeto](https://s1.static.brasilescola.uol.com.br/img/2018/11/cerrado.jpg)
 
 # Sobre o Projeto
 
@@ -50,7 +50,9 @@ As User Stories para esse projeto foram feitas da forma mais sucinta possível p
 
 # Vídeo de Apresentação
 
-[![Assista o vídeo](https://cdn.loom.com/sessions/thumbnails/3c21feda33d24e058aeca4553b96432c-with-play.gif)](https://www.loom.com/share/3c21feda33d24e058aeca4553b96432c)
+
+![Assista o vídeo](https://cdn.loom.com/sessions/thumbnails/7d08128cf5174a798f938dce9bae0f3b-with-play.gif)](https://www.loom.com/share/7d08128cf5174a798f938dce9bae0f3b)
+
 
 # Cursos Solicitados
 
